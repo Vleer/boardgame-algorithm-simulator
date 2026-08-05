@@ -1,0 +1,16 @@
+# Rust
+wasm/target/
+wasm/pkg/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Env / IDE
+.env
+.idea/
+.vscode/
+*.swp
+.DS_Store

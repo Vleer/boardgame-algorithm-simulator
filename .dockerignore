@@ -1,0 +1,12 @@
+.git
+.gitignore
+**/target
+**/pkg
+**/__pycache__
+**/*.pyc
+**/.venv
+**/node_modules
+Architecture.md
+README.md
+*.md
+.env

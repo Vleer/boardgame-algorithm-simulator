@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wasm Arcade</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0e1116;
+            --rail: #141820;
+            --rail-edge: #243041;
+            --cell: #1c232e;
+            --cell-hover: #273142;
+            --accent: #3ddc97;
+            --muted: #8b97a8;
+            --text: #e8eef6;
+            --x: #f4f7fb;
+            --o: #f0b429;
+            --othello-green: #1a6b4a;
+            --othello-green-hi: #21865c;
+            --disc-black: #121418;
+            --disc-white: #f2f4f7;
+            --rail-w: 220px;
+            --explain-h: 132px;
+            --ease: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            font-family: "Space Grotesk", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(ellipse 70% 50% at 15% 0%, rgba(45, 90, 120, 0.28), transparent 55%),
+                radial-gradient(ellipse 60% 45% at 90% 100%, rgba(35, 110, 80, 0.22), transparent 50%),
+                linear-gradient(165deg, #10141b 0%, var(--bg) 45%, #0c1512 100%);
+            overflow: hidden;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            grid-template-rows: 1fr auto;
+            height: 100%;
+            min-height: 100dvh;
+        }
+
+        .rail {
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
+            width: var(--rail-w);
+            background: color-mix(in srgb, var(--rail) 88%, transparent);
+            border-color: var(--rail-edge);
+            backdrop-filter: blur(10px);
+            transition: width 320ms var(--ease);
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .rail-left {
+            grid-column: 1;
+            border-right: 1px solid var(--rail-edge);
+        }
+
+        .rail-right {
+            grid-column: 3;
+            border-left: 1px solid var(--rail-edge);
+        }
+
+        .rail.collapsed { width: 48px; }
+
+        .rail-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            min-height: 52px;
+            padding: 0.75rem 0.85rem;
+            border-bottom: 1px solid var(--rail-edge);
+            flex-shrink: 0;
+        }
+
+        .rail-title {
+            margin: 0;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+            white-space: nowrap;
+            transition: opacity 200ms var(--ease);
+        }
+
+        .rail.collapsed .rail-title {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        .rail-toggle {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--rail-edge);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 0.95rem;
+            line-height: 1;
+            transition: border-color 160ms ease, background 160ms ease;
+        }
+
+        .rail-toggle:hover {
+            border-color: var(--accent);
+            background: rgba(61, 220, 151, 0.08);
+        }
+
+        .rail-body {
+            padding: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            opacity: 1;
+            transition: opacity 200ms var(--ease);
+            overflow: auto;
+        }
+
+        .rail.collapsed .rail-body {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .nav-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 0.7rem 0.8rem;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text);
+            font: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+            white-space: nowrap;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--rail-edge);
+        }
+
+        .nav-item.active {
+            background: rgba(61, 220, 151, 0.1);
+            border-color: color-mix(in srgb, var(--accent) 45%, var(--rail-edge));
+            color: var(--accent);
+        }
+
+        .nav-hint {
+            margin: 0.35rem 0.2rem 0;
+            font-size: 0.75rem;
+            color: var(--muted);
+            line-height: 1.35;
+        }
+
+        .stage {
+            grid-column: 2;
+            grid-row: 1;
+            display: grid;
+            place-items: center;
+            padding: 1.5rem;
+            overflow: auto;
+            min-width: 0;
+        }
+
+        .play {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.1rem;
+            animation: rise 480ms var(--ease) both;
+        }
+
+        .play.active { display: flex; }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand {
+            margin: 0;
+            font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            text-align: center;
+        }
+
+        .brand span { color: var(--accent); }
+
+        .status {
+            color: var(--muted);
+            font-size: 0.95rem;
+            text-align: center;
+            min-height: 1.4em;
+        }
+
+        .scoreline {
+            display: flex;
+            gap: 1.25rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .scoreline strong { color: var(--text); }
+
+        .grid-ttt {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 8px;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            background: var(--cell);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            border: 1px solid transparent;
+            transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+        }
+
+        .cell:hover:not(.filled):not(.locked) {
+            background: var(--cell-hover);
+            border-color: #3a4a5e;
+            transform: translateY(-1px);
+        }
+
+        .cell.filled { cursor: default; }
+        .cell.x { color: var(--x); }
+        .cell.o { color: var(--o); }
+
+        .othello-board {
+            display: grid;
+            grid-template-columns: repeat(8, 42px);
+            grid-template-rows: repeat(8, 42px);
+            gap: 2px;
+            padding: 8px;
+            background: #0f3d2c;
+            border-radius: 12px;
+            box-shadow: inset 0 0 0 2px #145239;
+        }
+
+        .o-cell {
+            background: var(--othello-green);
+            border-radius: 4px;
+            display: grid;
+            place-items: center;
+            cursor: default;
+            position: relative;
+            transition: background 120ms ease;
+        }
+
+        .o-cell.legal {
+            cursor: pointer;
+            background: var(--othello-green-hi);
+        }
+
+        .o-cell.legal::after {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .o-cell.legal:hover::after {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .disc {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+            animation: place 220ms var(--ease) both;
+        }
+
+        .disc.black {
+            background: radial-gradient(circle at 35% 30%, #3a3f48, var(--disc-black));
+        }
+
+        .disc.white {
+            background: radial-gradient(circle at 35% 30%, #fff, var(--disc-white));
+        }
+
+        @keyframes place {
+            from { transform: scale(0.55); opacity: 0.4; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            background: rgba(20, 24, 32, 0.7);
+            color: var(--accent);
+            border: 1px solid var(--rail-edge);
+            border-radius: 10px;
+            padding: 0.55rem 1.1rem;
+            font: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 160ms ease, background 160ms ease;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            background: rgba(61, 220, 151, 0.08);
+        }
+
+        .explain {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            height: var(--explain-h);
+            border-top: 1px solid var(--rail-edge);
+            background: color-mix(in srgb, var(--rail) 92%, #0a0c10);
+            display: grid;
+            grid-template-rows: auto 1fr;
+            transition: height 320ms var(--ease);
+            overflow: hidden;
+            z-index: 3;
+        }
+
+        .explain.collapsed,
+        .explain.empty:not(.collapsed) { height: 44px; }
+
+        .explain-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            min-height: 44px;
+            padding: 0 0.85rem;
+        }
+
+        .explain-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .explain-label strong {
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: none;
+            font-size: 0.9rem;
+            margin-left: 0.55rem;
+        }
+
+        .explain-body {
+            padding: 0 1.1rem 0.95rem;
+            overflow: hidden;
+            transition: opacity 200ms var(--ease);
+        }
+
+        .explain.collapsed .explain-body,
+        .explain.empty .explain-body {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .explain-body p {
+            margin: 0;
+            max-width: 72ch;
+            font-family: "Source Serif 4", Georgia, serif;
+            font-size: 0.98rem;
+            line-height: 1.55;
+            color: #c5d0de;
+        }
+
+        @media (max-width: 820px) {
+            :root { --rail-w: 180px; }
+            .grid-ttt { grid-template-columns: repeat(3, 88px); gap: 6px; }
+            .cell { width: 88px; height: 88px; font-size: 2.1rem; }
+            .othello-board {
+                grid-template-columns: repeat(8, 36px);
+                grid-template-rows: repeat(8, 36px);
+            }
+            .disc { width: 26px; height: 26px; }
+        }
+
+        @media (max-width: 640px) {
+            .app {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto auto;
+            }
+            .rail-left {
+                grid-column: 1;
+                grid-row: 1;
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--rail-edge);
+                max-height: 200px;
+            }
+            .rail-right {
+                grid-column: 1;
+                grid-row: 3;
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--rail-edge);
+                max-height: 200px;
+            }
+            .rail.collapsed {
+                width: 100%;
+                max-height: 48px;
+            }
+            .stage { grid-column: 1; grid-row: 2; }
+            .explain { grid-column: 1; grid-row: 4; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <aside class="rail rail-left" id="games-rail" aria-label="Games">
+        <div class="rail-head">
+            <h2 class="rail-title">Games</h2>
+            <button type="button" class="rail-toggle" id="games-toggle" aria-expanded="true" title="Collapse games">‹</button>
+        </div>
+        <div class="rail-body">
+            <button type="button" class="nav-item active" data-game="tictactoe">Tic-Tac-Toe</button>
+            <button type="button" class="nav-item" data-game="othello">Othello</button>
+            <p class="nav-hint" id="game-hint">Wasm engine · local AI · verified finish</p>
+        </div>
+    </aside>
+
+    <main class="stage">
+        <div class="play active" id="play-tictactoe" data-panel="tictactoe">
+            <h1 class="brand">Snappy <span>Wasm</span> Tic-Tac-Toe</h1>
+            <div class="status" id="ttt-status">Starting session...</div>
+            <div class="grid-ttt" id="ttt-board">
+                <div class="cell" data-idx="0"></div>
+                <div class="cell" data-idx="1"></div>
+                <div class="cell" data-idx="2"></div>
+                <div class="cell" data-idx="3"></div>
+                <div class="cell" data-idx="4"></div>
+                <div class="cell" data-idx="5"></div>
+                <div class="cell" data-idx="6"></div>
+                <div class="cell" data-idx="7"></div>
+                <div class="cell" data-idx="8"></div>
+            </div>
+            <div class="actions">
+                <button type="button" class="btn" id="ttt-new">New Game</button>
+            </div>
+        </div>
+
+        <div class="play" id="play-othello" data-panel="othello">
+            <h1 class="brand">Othello <span>Reversi</span></h1>
+            <div class="status" id="othello-status">Your move (Black)</div>
+            <div class="scoreline">
+                <span>Black <strong id="score-black">2</strong></span>
+                <span>White <strong id="score-white">2</strong></span>
+            </div>
+            <div class="othello-board" id="othello-board" aria-label="Othello board"></div>
+            <div class="actions">
+                <button type="button" class="btn" id="othello-new">New Game</button>
+            </div>
+        </div>
+    </main>
+
+    <aside class="rail rail-right" id="algo-rail" aria-label="Algorithms">
+        <div class="rail-head">
+            <h2 class="rail-title">Algorithm</h2>
+            <button type="button" class="rail-toggle" id="algo-toggle" aria-expanded="true" title="Collapse algorithms">›</button>
+        </div>
+        <div class="rail-body" id="algo-list"></div>
+    </aside>
+
+    <section class="explain empty" id="explain" aria-live="polite">
+        <div class="explain-head">
+            <div class="explain-label">Algorithm<strong id="explain-name">Select one →</strong></div>
+            <button type="button" class="rail-toggle" id="explain-toggle" aria-expanded="true" title="Collapse explanation">▾</button>
+        </div>
+        <div class="explain-body">
+            <p id="explain-text"></p>
+        </div>
+    </section>
+</div>
+
+<script type="module">
+    import init, { TicTacToeEngine } from './pkg/tictactoe_wasm.js';
+    import { OthelloEngine, BLACK, WHITE, countPieces, outcomeForPlayer } from './othello.js';
+
+    const GAME_META = {
+        tictactoe: {
+            hint: 'Wasm engine · local AI · verified finish',
+            algorithms: {
+                minimax: {
+                    name: 'Minimax',
+                    text: 'The AI explores every legal future by alternating maximizing (AI) and minimizing (you) scores. Wins score high with a depth penalty so faster wins are preferred; losses are inverted. On a 3×3 board the full tree is tiny, so every reply is optimal—unbeatable play.',
+                },
+                bitboards: {
+                    name: 'Bitboards',
+                    text: 'The board is two 9-bit integers: one mask for X, one for O. A move is a single bit set with OR; occupancy is the bitwise OR of both masks. This keeps state in registers and makes legality checks a handful of CPU instructions inside Wasm.',
+                },
+                winmasks: {
+                    name: 'Win Masks',
+                    text: 'Eight constant bit patterns encode the rows, columns, and diagonals. A side wins when (mask & pattern) == pattern for any pattern—pure bitwise ANDs, no loops over cells. The same predicates drive both the live engine and server-side replay verification.',
+                },
+            },
+        },
+        othello: {
+            hint: '8×8 reversi · you are Black · positional minimax AI',
+            algorithms: {
+                flipping: {
+                    name: 'Line Flipping',
+                    text: 'A legal move must sandwich one or more opponent discs between your new disc and another of yours along a row, column, or diagonal. All sandwiched discs flip color. If a side has no legal move, it passes; when both cannot move, the game ends.',
+                },
+                positional: {
+                    name: 'Positional Weights',
+                    text: 'Corners are extremely strong and never flip once taken; squares adjacent to empty corners (X-squares) are dangerous. The AI scores boards with a classic weight matrix that prizes corners and edges while punishing weak near-corner placements.',
+                },
+                alphabeta: {
+                    name: 'Alpha-Beta Minimax',
+                    text: 'Othello’s branching factor is larger than Tic-Tac-Toe, so the AI searches a few plies with alpha-beta pruning. Mobility (how many moves you leave yourself versus the opponent) is mixed into the heuristic so mid-game control matters, not only raw disc count.',
+                },
+            },
+        },
+    };
+
+    let currentGame = 'tictactoe';
+    let tttEngine;
+    let sessionData;
+    let tttGameOver = false;
+    let tttBusy = false;
+
+    const othello = new OthelloEngine();
+    let othelloBusy = false;
+
+    const algoList = document.getElementById('algo-list');
+    const explain = document.getElementById('explain');
+    const explainName = document.getElementById('explain-name');
+    const explainText = document.getElementById('explain-text');
+    const explainToggle = document.getElementById('explain-toggle');
+    const gameHint = document.getElementById('game-hint');
+    const gamesRail = document.getElementById('games-rail');
+    const algoRail = document.getElementById('algo-rail');
+
+    function wireCollapse(rail, button, collapsedGlyph, expandedGlyph) {
+        button.addEventListener('click', () => {
+            const collapsed = rail.classList.toggle('collapsed');
+            button.setAttribute('aria-expanded', String(!collapsed));
+            button.textContent = collapsed ? collapsedGlyph : expandedGlyph;
+            button.title = collapsed ? 'Expand' : 'Collapse';
+        });
+    }
+
+    wireCollapse(gamesRail, document.getElementById('games-toggle'), '›', '‹');
+    wireCollapse(algoRail, document.getElementById('algo-toggle'), '‹', '›');
+
+    explainToggle.addEventListener('click', () => {
+        const collapsed = explain.classList.toggle('collapsed');
+        explainToggle.setAttribute('aria-expanded', String(!collapsed));
+        explainToggle.textContent = collapsed ? '▴' : '▾';
+        explainToggle.title = collapsed ? 'Expand explanation' : 'Collapse explanation';
+    });
+
+    function resetExplain() {
+        explain.classList.add('empty');
+        explain.classList.remove('collapsed');
+        explainName.textContent = 'Select one →';
+        explainText.textContent = '';
+        explainToggle.textContent = '▾';
+        explainToggle.setAttribute('aria-expanded', 'true');
+    }
+
+    function renderAlgorithms(gameId) {
+        const algos = GAME_META[gameId].algorithms;
+        algoList.innerHTML = '';
+        Object.entries(algos).forEach(([id, algo]) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'nav-item';
+            btn.dataset.algo = id;
+            btn.textContent = algo.name;
+            btn.addEventListener('click', () => {
+                algoList.querySelectorAll('.nav-item').forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+                explainName.textContent = algo.name;
+                explainText.textContent = algo.text;
+                explain.classList.remove('empty', 'collapsed');
+                explainToggle.setAttribute('aria-expanded', 'true');
+                explainToggle.textContent = '▾';
+            });
+            algoList.appendChild(btn);
+        });
+        resetExplain();
+    }
+
+    function switchGame(gameId) {
+        if (!GAME_META[gameId] || gameId === currentGame) return;
+        currentGame = gameId;
+        document.querySelectorAll('[data-game]').forEach((b) => {
+            b.classList.toggle('active', b.dataset.game === gameId);
+        });
+        document.querySelectorAll('.play').forEach((p) => {
+            p.classList.toggle('active', p.dataset.panel === gameId);
+        });
+        gameHint.textContent = GAME_META[gameId].hint;
+        renderAlgorithms(gameId);
+
+        if (gameId === 'othello') startOthello();
+    }
+
+    document.querySelectorAll('[data-game]').forEach((btn) => {
+        btn.addEventListener('click', () => switchGame(btn.dataset.game));
+    });
+
+    /* ——— Tic-Tac-Toe ——— */
+    const tttCells = document.querySelectorAll('#ttt-board .cell');
+    const tttStatus = document.getElementById('ttt-status');
+
+    async function mintSession() {
+        const res = await fetch('/api/game/start', { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to start session');
+        sessionData = await res.json();
+    }
+
+    function renderTtt() {
+        const pBits = tttEngine.get_player_bits();
+        const aBits = tttEngine.get_ai_bits();
+        tttCells.forEach((cell, i) => {
+            const bit = 1 << i;
+            cell.classList.remove('filled', 'x', 'o', 'locked');
+            if (pBits & bit) {
+                cell.textContent = 'X';
+                cell.classList.add('filled', 'x');
+            } else if (aBits & bit) {
+                cell.textContent = 'O';
+                cell.classList.add('filled', 'o');
+            } else {
+                cell.textContent = '';
+            }
+            if (tttGameOver) cell.classList.add('locked');
+        });
+    }
+
+    async function startTtt() {
+        tttBusy = true;
+        tttGameOver = false;
+        tttStatus.textContent = 'Starting session...';
+        tttEngine.reset();
+        renderTtt();
+        try {
+            await mintSession();
+            tttStatus.textContent = 'Game Ready — Make your move!';
+        } catch (err) {
+            tttStatus.textContent = 'Could not reach backend.';
+            console.error(err);
+        } finally {
+            tttBusy = false;
+        }
+    }
+
+    async function finishTtt(outcome) {
+        tttStatus.textContent = `Game Over: ${outcome}`;
+        try {
+            const res = await fetch('/api/game/finish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...sessionData,
+                    result: outcome,
+                    move_sequence: tttEngine.get_move_sequence(),
+                }),
+            });
+            if (!res.ok) {
+                tttStatus.textContent = `Game Over: ${outcome} (verify failed)`;
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    tttCells.forEach((cell) => {
+        cell.addEventListener('click', async () => {
+            if (currentGame !== 'tictactoe' || tttBusy || tttGameOver) return;
+            const idx = parseInt(cell.dataset.idx, 10);
+            const resCode = tttEngine.play_turn(idx);
+            if (resCode === 255) return;
+            renderTtt();
+            if (resCode !== 0) {
+                tttGameOver = true;
+                renderTtt();
+                const outcome = resCode === 1 ? 'WIN' : (resCode === 2 ? 'LOSS' : 'DRAW');
+                tttBusy = true;
+                await finishTtt(outcome);
+                tttBusy = false;
+            }
+        });
+    });
+
+    document.getElementById('ttt-new').addEventListener('click', () => {
+        if (tttBusy) return;
+        startTtt();
+    });
+
+    /* ——— Othello ——— */
+    const othelloBoardEl = document.getElementById('othello-board');
+    const othelloStatus = document.getElementById('othello-status');
+    const scoreBlack = document.getElementById('score-black');
+    const scoreWhite = document.getElementById('score-white');
+
+    for (let i = 0; i < 64; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'o-cell';
+        cell.dataset.idx = String(i);
+        othelloBoardEl.appendChild(cell);
+    }
+    const oCells = othelloBoardEl.querySelectorAll('.o-cell');
+
+    function renderOthello() {
+        const legal = new Set(
+            othello.gameOver || othello.turn !== BLACK ? [] : othello.legalForCurrent()
+        );
+        const { black, white } = countPieces(othello.board);
+        scoreBlack.textContent = String(black);
+        scoreWhite.textContent = String(white);
+
+        oCells.forEach((cell, i) => {
+            cell.classList.toggle('legal', legal.has(i));
+            cell.innerHTML = '';
+            const v = othello.board[i];
+            if (v === BLACK || v === WHITE) {
+                const disc = document.createElement('div');
+                disc.className = `disc ${v === BLACK ? 'black' : 'white'}`;
+                cell.appendChild(disc);
+            }
+        });
+    }
+
+    function finishOthello() {
+        const outcome = outcomeForPlayer(othello.board);
+        const { black, white } = countPieces(othello.board);
+        const label = outcome === 'WIN' ? 'You win' : outcome === 'LOSS' ? 'White wins' : 'Draw';
+        othelloStatus.textContent = `Game Over: ${label} (${black}–${white})`;
+    }
+
+    async function runAiTurn() {
+        othelloBusy = true;
+        othelloStatus.textContent = 'White is thinking…';
+        await new Promise((r) => setTimeout(r, 180));
+        const status = othello.playAi();
+        renderOthello();
+        if (status === 'over') {
+            finishOthello();
+            othelloBusy = false;
+            return;
+        }
+        if (status === 'ai') {
+            await runAiTurn();
+            return;
+        }
+        if (status === 'pass') {
+            othelloStatus.textContent = 'White passed — your move';
+        } else {
+            othelloStatus.textContent = 'Your move (Black)';
+        }
+        othelloBusy = false;
+        renderOthello();
+    }
+
+    function startOthello() {
+        othello.reset();
+        othelloBusy = false;
+        othelloStatus.textContent = 'Your move (Black)';
+        renderOthello();
+    }
+
+    othelloBoardEl.addEventListener('click', async (ev) => {
+        if (currentGame !== 'othello' || othelloBusy || othello.gameOver) return;
+        const cell = ev.target.closest('.o-cell');
+        if (!cell) return;
+        const i = parseInt(cell.dataset.idx, 10);
+        const status = othello.playHuman(i);
+        if (status === 'invalid') return;
+        renderOthello();
+        if (status === 'over') {
+            finishOthello();
+            return;
+        }
+        if (status === 'pass') {
+            othelloStatus.textContent = 'No moves for White — your move again';
+            return;
+        }
+        if (status === 'ai') await runAiTurn();
+    });
+
+    document.getElementById('othello-new').addEventListener('click', () => {
+        if (othelloBusy) return;
+        startOthello();
+    });
+
+    renderAlgorithms('tictactoe');
+
+    async function setup() {
+        await init();
+        tttEngine = new TicTacToeEngine();
+        await startTtt();
+    }
+
+    setup().catch((err) => {
+        tttStatus.textContent = 'Failed to load Wasm engine.';
+        console.error('Wasm init failed:', err);
+    });
+</script>
+</body>
+</html>

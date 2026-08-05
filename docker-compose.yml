@@ -1,0 +1,8 @@
+services:
+  tictactoe:
+    build: .
+    ports:
+      - "8080:8000"
+    environment:
+      GAME_SECRET_KEY: "super-secret-game-signing-key-32bytes"
+    restart: unless-stopped
