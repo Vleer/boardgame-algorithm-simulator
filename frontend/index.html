@@ -320,9 +320,303 @@
             to { transform: scale(1); opacity: 1; }
         }
 
+        .draughts-board {
+            display: grid;
+            gap: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 0 2px #2a3544;
+        }
+
+        .draughts-board.size-8 {
+            grid-template-columns: repeat(8, 44px);
+            grid-template-rows: repeat(8, 44px);
+        }
+
+        .draughts-board.size-10 {
+            grid-template-columns: repeat(10, 36px);
+            grid-template-rows: repeat(10, 36px);
+        }
+
+        .d-cell {
+            display: grid;
+            place-items: center;
+            position: relative;
+        }
+
+        .d-cell.light { background: #cbb89a; }
+        .d-cell.dark { background: #3e5a45; }
+
+        .d-cell.legal {
+            cursor: pointer;
+            box-shadow: inset 0 0 0 2px rgba(61, 220, 151, 0.85);
+        }
+
+        .d-cell.selected {
+            box-shadow: inset 0 0 0 3px #f0b429;
+            background: #4a6b52;
+        }
+
+        .d-cell.last-from {
+            box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.55);
+        }
+
+        .d-cell.last-to {
+            box-shadow: inset 0 0 0 3px #fbbf24;
+            background: #5a7d5f;
+        }
+
+        .d-cell.origin {
+            cursor: pointer;
+        }
+
+        .cell.last-move,
+        .o-cell.last-move {
+            box-shadow: inset 0 0 0 3px #fbbf24;
+        }
+
+        .o-cell.last-move {
+            background: #2a8f66;
+        }
+
+        .cell.last-move {
+            border-color: #fbbf24;
+        }
+
+        .side-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--rail-edge);
+            border-radius: 10px;
+            overflow: hidden;
+            grid-column: 1 / -1;
+        }
+
+        .side-toggle button {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 0.55rem 0.4rem;
+            cursor: pointer;
+            transition: background 140ms ease, color 140ms ease;
+        }
+
+        .side-toggle button:hover {
+            color: var(--text);
+        }
+
+        .side-toggle button.active {
+            background: rgba(61, 220, 151, 0.16);
+            color: var(--accent);
+        }
+
+        .side-toggle button[data-side="white"].active {
+            background: rgba(242, 244, 247, 0.14);
+            color: #e8eef6;
+        }
+
+        .setup-hint {
+            grid-column: 1 / -1;
+            margin: 0;
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.4;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .board-shell {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .d-piece {
+            width: 72%;
+            height: 72%;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 0.7em;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .d-piece.black {
+            background: radial-gradient(circle at 35% 30%, #4a5160, #14171c);
+            color: #f0b429;
+        }
+
+        .d-piece.white {
+            background: radial-gradient(circle at 35% 30%, #fff, #e4e7ec);
+            color: #334155;
+        }
+
+        .variant-meta {
+            max-width: 36rem;
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+
+        .options {
+            width: min(100%, 420px);
+            border: 1px solid var(--rail-edge);
+            border-radius: 12px;
+            background: rgba(16, 20, 28, 0.72);
+            padding: 0.35rem 0.75rem 0.65rem;
+        }
+
+        .options summary {
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            list-style: none;
+            padding: 0.35rem 0;
+        }
+
+        .options summary::-webkit-details-marker { display: none; }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.55rem 0.75rem;
+            padding-top: 0.35rem;
+        }
+
+        .options label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            font-size: 0.72rem;
+            color: var(--muted);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .options select,
+        .options input[type="checkbox"] {
+            accent-color: var(--accent);
+        }
+
+        .options select {
+            font: inherit;
+            font-size: 0.88rem;
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--text);
+            background: var(--cell);
+            border: 1px solid var(--rail-edge);
+            border-radius: 8px;
+            padding: 0.4rem 0.5rem;
+        }
+
+        .depth-control {
+            grid-column: 1 / -1;
+            display: none;
+            gap: 0.35rem;
+            padding: 0.45rem 0.15rem 0.15rem;
+            border-top: 1px solid var(--rail-edge);
+            margin-top: 0.15rem;
+        }
+
+        .depth-control.visible {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .depth-control .depth-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .depth-control .depth-head strong {
+            color: var(--accent);
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
+            text-transform: none;
+        }
+
+        .depth-control input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .depth-control .depth-ticks {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: #6b7788;
+            letter-spacing: 0.04em;
+        }
+
+        .options .check {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.45rem;
+            text-transform: none;
+            letter-spacing: 0;
+            font-size: 0.85rem;
+            color: var(--text);
+            margin-top: 1.15rem;
+        }
+
+        .options-grid .span-2 {
+            grid-column: 1 / -1;
+        }
+
+        .setup-tools {
+            display: none;
+            grid-column: 1 / -1;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.55rem 0.75rem;
+            padding-top: 0.25rem;
+            border-top: 1px solid var(--rail-edge);
+            margin-top: 0.25rem;
+        }
+
+        .options.setup-on .setup-tools {
+            display: grid;
+        }
+
+        .play.setup-on .status {
+            color: var(--accent);
+        }
+
+        .board-flipped {
+            transform: rotate(180deg);
+        }
+
+        .board-flipped .cell,
+        .board-flipped .o-cell,
+        .board-flipped .d-cell {
+            transform: rotate(180deg);
+        }
+
         .actions {
             display: flex;
             gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .btn {
@@ -338,9 +632,14 @@
             transition: border-color 160ms ease, background 160ms ease;
         }
 
-        .btn:hover {
+        .btn:hover:not(:disabled) {
             border-color: var(--accent);
             background: rgba(61, 220, 151, 0.08);
+        }
+
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
         }
 
         .explain {
@@ -415,6 +714,14 @@
                 grid-template-rows: repeat(8, 36px);
             }
             .disc { width: 26px; height: 26px; }
+            .draughts-board.size-8 {
+                grid-template-columns: repeat(8, 36px);
+                grid-template-rows: repeat(8, 36px);
+            }
+            .draughts-board.size-10 {
+                grid-template-columns: repeat(10, 30px);
+                grid-template-rows: repeat(10, 30px);
+            }
         }
 
         @media (max-width: 640px) {
@@ -458,6 +765,8 @@
         <div class="rail-body">
             <button type="button" class="nav-item active" data-game="tictactoe">Tic-Tac-Toe</button>
             <button type="button" class="nav-item" data-game="othello">Othello</button>
+            <button type="button" class="nav-item" data-game="checkers">Checkers</button>
+            <button type="button" class="nav-item" data-game="draughts">International Draughts</button>
             <p class="nav-hint" id="game-hint">Wasm engine · local AI · verified finish</p>
         </div>
     </aside>
@@ -465,6 +774,42 @@
     <main class="stage">
         <div class="play active" id="play-tictactoe" data-panel="tictactoe">
             <h1 class="brand">Snappy <span>Wasm</span> Tic-Tac-Toe</h1>
+            <details class="options" open>
+                <summary>Options</summary>
+                <div class="options-grid">
+                    <label>Your mark
+                        <select data-opt="tictactoe" data-key="color">
+                            <option value="X" selected>X (first)</option>
+                            <option value="O">O (second)</option>
+                        </select>
+                    </label>
+                    <label>AI think delay
+                        <select data-opt="tictactoe" data-key="thinkMs">
+                            <option value="0">Instant</option>
+                            <option value="200" selected>Short</option>
+                            <option value="500">Slow</option>
+                        </select>
+                    </label>
+                    <div class="depth-control" data-depth-for="tictactoe">
+                        <div class="depth-head"><span data-depth-label>Search depth</span><strong data-depth-value>4</strong></div>
+                        <input type="range" min="1" max="8" step="1" value="4" data-opt="tictactoe" data-key="depth">
+                        <div class="depth-ticks"><span>1</span><span>8</span></div>
+                    </div>
+                    <label class="check"><input type="checkbox" data-opt="tictactoe" data-key="showHints" checked> Show empty-cell hover</label>
+                    <label class="check"><input type="checkbox" data-opt="tictactoe" data-key="soundless" checked> Quiet mode</label>
+                    <label class="check"><input type="checkbox" data-opt="tictactoe" data-key="flipBoard"> Flip board</label>
+                    <label class="check"><input type="checkbox" data-opt="tictactoe" data-key="setupMode"> Setup mode</label>
+                    <div class="setup-tools">
+                        <p class="setup-hint">Left-click cycles O · Right-click cycles X · Empty is in both cycles</p>
+                        <p class="setup-hint">Side to move</p>
+                        <div class="side-toggle" data-side-for="tictactoe" role="group" aria-label="Side to move">
+                            <button type="button" data-side="human" class="active">You</button>
+                            <button type="button" data-side="ai">AI</button>
+                        </div>
+                        <button type="button" class="btn span-2" data-clear="tictactoe">Clear board</button>
+                    </div>
+                </div>
+            </details>
             <div class="status" id="ttt-status">Starting session...</div>
             <div class="grid-ttt" id="ttt-board">
                 <div class="cell" data-idx="0"></div>
@@ -478,12 +823,50 @@
                 <div class="cell" data-idx="8"></div>
             </div>
             <div class="actions">
+                <button type="button" class="btn" id="ttt-undo">Undo</button>
+                <button type="button" class="btn" id="ttt-redo">Redo</button>
                 <button type="button" class="btn" id="ttt-new">New Game</button>
             </div>
         </div>
 
         <div class="play" id="play-othello" data-panel="othello">
             <h1 class="brand">Othello <span>Reversi</span></h1>
+            <details class="options" open>
+                <summary>Options</summary>
+                <div class="options-grid">
+                    <label>Your color
+                        <select data-opt="othello" data-key="color">
+                            <option value="black" selected>Black (first)</option>
+                            <option value="white">White (second)</option>
+                        </select>
+                    </label>
+                    <label>AI think delay
+                        <select data-opt="othello" data-key="thinkMs">
+                            <option value="0">Instant</option>
+                            <option value="200" selected>Short</option>
+                            <option value="500">Slow</option>
+                        </select>
+                    </label>
+                    <div class="depth-control" data-depth-for="othello">
+                        <div class="depth-head"><span data-depth-label>Search depth</span><strong data-depth-value>3</strong></div>
+                        <input type="range" min="1" max="8" step="1" value="3" data-opt="othello" data-key="depth">
+                        <div class="depth-ticks"><span>1</span><span>8</span></div>
+                    </div>
+                    <label class="check"><input type="checkbox" data-opt="othello" data-key="showHints" checked> Show legal moves</label>
+                    <label class="check"><input type="checkbox" data-opt="othello" data-key="autoPass" checked> Auto-pass when no moves</label>
+                    <label class="check"><input type="checkbox" data-opt="othello" data-key="flipBoard"> Flip board</label>
+                    <label class="check"><input type="checkbox" data-opt="othello" data-key="setupMode"> Setup mode</label>
+                    <div class="setup-tools">
+                        <p class="setup-hint">Left-click cycles white · Right-click cycles black · Empty is in both cycles</p>
+                        <p class="setup-hint">Side to move</p>
+                        <div class="side-toggle" data-side-for="othello" role="group" aria-label="Side to move">
+                            <button type="button" data-side="black" class="active">Black</button>
+                            <button type="button" data-side="white">White</button>
+                        </div>
+                        <button type="button" class="btn span-2" data-clear="othello">Clear board</button>
+                    </div>
+                </div>
+            </details>
             <div class="status" id="othello-status">Your move (Black)</div>
             <div class="scoreline">
                 <span>Black <strong id="score-black">2</strong></span>
@@ -491,7 +874,113 @@
             </div>
             <div class="othello-board" id="othello-board" aria-label="Othello board"></div>
             <div class="actions">
+                <button type="button" class="btn" id="othello-undo">Undo</button>
+                <button type="button" class="btn" id="othello-redo">Redo</button>
                 <button type="button" class="btn" id="othello-new">New Game</button>
+            </div>
+        </div>
+
+        <div class="play" id="play-checkers" data-panel="checkers">
+            <h1 class="brand">American <span>Checkers</span></h1>
+            <p class="variant-meta">English Draughts · 8×8 · 12 per side · step kings · forward-only men · no majority capture</p>
+            <details class="options" open>
+                <summary>Options</summary>
+                <div class="options-grid">
+                    <label>Your color
+                        <select data-opt="checkers" data-key="color">
+                            <option value="black" selected>Black (first)</option>
+                            <option value="white">White (second)</option>
+                        </select>
+                    </label>
+                    <label>AI think delay
+                        <select data-opt="checkers" data-key="thinkMs">
+                            <option value="0">Instant</option>
+                            <option value="150" selected>Short</option>
+                            <option value="450">Slow</option>
+                        </select>
+                    </label>
+                    <div class="depth-control" data-depth-for="checkers">
+                        <div class="depth-head"><span data-depth-label>Search depth</span><strong data-depth-value>5</strong></div>
+                        <input type="range" min="1" max="8" step="1" value="5" data-opt="checkers" data-key="depth">
+                        <div class="depth-ticks"><span>1</span><span>8</span></div>
+                    </div>
+                    <label class="check"><input type="checkbox" data-opt="checkers" data-key="showHints" checked> Highlight moves</label>
+                    <label class="check"><input type="checkbox" data-opt="checkers" data-key="mustSelect" checked> Click piece then square</label>
+                    <label class="check"><input type="checkbox" data-opt="checkers" data-key="flipBoard"> Flip board</label>
+                    <label class="check"><input type="checkbox" data-opt="checkers" data-key="setupMode"> Setup mode</label>
+                    <div class="setup-tools">
+                        <p class="setup-hint">Left-click cycles white · Right-click cycles black · Empty is in both cycles</p>
+                        <p class="setup-hint">Side to move</p>
+                        <div class="side-toggle" data-side-for="checkers" role="group" aria-label="Side to move">
+                            <button type="button" data-side="black" class="active">Black</button>
+                            <button type="button" data-side="white">White</button>
+                        </div>
+                        <button type="button" class="btn span-2" data-clear="checkers">Clear board</button>
+                    </div>
+                </div>
+            </details>
+            <div class="status" id="checkers-status">Your move (Black)</div>
+            <div class="scoreline">
+                <span>Black <strong id="checkers-black">12</strong></span>
+                <span>White <strong id="checkers-white">12</strong></span>
+            </div>
+            <div class="draughts-board size-8" id="checkers-board" aria-label="Checkers board"></div>
+            <div class="actions">
+                <button type="button" class="btn" id="checkers-undo">Undo</button>
+                <button type="button" class="btn" id="checkers-redo">Redo</button>
+                <button type="button" class="btn" id="checkers-new">New Game</button>
+            </div>
+        </div>
+
+        <div class="play" id="play-draughts" data-panel="draughts">
+            <h1 class="brand">International <span>Draughts</span></h1>
+            <p class="variant-meta">10×10 · 20 per side · flying kings · backward man captures · majority capture mandatory</p>
+            <details class="options" open>
+                <summary>Options</summary>
+                <div class="options-grid">
+                    <label>Your color
+                        <select data-opt="draughts" data-key="color">
+                            <option value="black" selected>Black (first)</option>
+                            <option value="white">White (second)</option>
+                        </select>
+                    </label>
+                    <label>AI think delay
+                        <select data-opt="draughts" data-key="thinkMs">
+                            <option value="0">Instant</option>
+                            <option value="150" selected>Short</option>
+                            <option value="450">Slow</option>
+                        </select>
+                    </label>
+                    <div class="depth-control" data-depth-for="draughts">
+                        <div class="depth-head"><span data-depth-label>Search depth</span><strong data-depth-value>4</strong></div>
+                        <input type="range" min="1" max="8" step="1" value="4" data-opt="draughts" data-key="depth">
+                        <div class="depth-ticks"><span>1</span><span>8</span></div>
+                    </div>
+                    <label class="check"><input type="checkbox" data-opt="draughts" data-key="showHints" checked> Highlight moves</label>
+                    <label class="check"><input type="checkbox" data-opt="draughts" data-key="showCounts" checked> Show piece counts</label>
+                    <label class="check"><input type="checkbox" data-opt="draughts" data-key="flipBoard"> Flip board</label>
+                    <label class="check"><input type="checkbox" data-opt="draughts" data-key="setupMode"> Setup mode</label>
+                    <div class="setup-tools">
+                        <p class="setup-hint">Left-click cycles white · Right-click cycles black · Empty is in both cycles</p>
+                        <p class="setup-hint">Side to move</p>
+                        <div class="side-toggle" data-side-for="draughts" role="group" aria-label="Side to move">
+                            <button type="button" data-side="black" class="active">Black</button>
+                            <button type="button" data-side="white">White</button>
+                        </div>
+                        <button type="button" class="btn span-2" data-clear="draughts">Clear board</button>
+                    </div>
+                </div>
+            </details>
+            <div class="status" id="draughts-status">Your move (Black)</div>
+            <div class="scoreline" id="draughts-scoreline">
+                <span>Black <strong id="draughts-black">20</strong></span>
+                <span>White <strong id="draughts-white">20</strong></span>
+            </div>
+            <div class="draughts-board size-10" id="draughts-board" aria-label="International draughts board"></div>
+            <div class="actions">
+                <button type="button" class="btn" id="draughts-undo">Undo</button>
+                <button type="button" class="btn" id="draughts-redo">Redo</button>
+                <button type="button" class="btn" id="draughts-new">New Game</button>
             </div>
         </div>
     </main>
@@ -515,332 +1004,6 @@
     </section>
 </div>
 
-<script type="module">
-    import init, { TicTacToeEngine } from './pkg/tictactoe_wasm.js';
-    import { OthelloEngine, BLACK, WHITE, countPieces, outcomeForPlayer } from './othello.js';
-
-    const GAME_META = {
-        tictactoe: {
-            hint: 'Wasm engine · local AI · verified finish',
-            algorithms: {
-                minimax: {
-                    name: 'Minimax',
-                    text: 'The AI explores every legal future by alternating maximizing (AI) and minimizing (you) scores. Wins score high with a depth penalty so faster wins are preferred; losses are inverted. On a 3×3 board the full tree is tiny, so every reply is optimal—unbeatable play.',
-                },
-                bitboards: {
-                    name: 'Bitboards',
-                    text: 'The board is two 9-bit integers: one mask for X, one for O. A move is a single bit set with OR; occupancy is the bitwise OR of both masks. This keeps state in registers and makes legality checks a handful of CPU instructions inside Wasm.',
-                },
-                winmasks: {
-                    name: 'Win Masks',
-                    text: 'Eight constant bit patterns encode the rows, columns, and diagonals. A side wins when (mask & pattern) == pattern for any pattern—pure bitwise ANDs, no loops over cells. The same predicates drive both the live engine and server-side replay verification.',
-                },
-            },
-        },
-        othello: {
-            hint: '8×8 reversi · you are Black · positional minimax AI',
-            algorithms: {
-                flipping: {
-                    name: 'Line Flipping',
-                    text: 'A legal move must sandwich one or more opponent discs between your new disc and another of yours along a row, column, or diagonal. All sandwiched discs flip color. If a side has no legal move, it passes; when both cannot move, the game ends.',
-                },
-                positional: {
-                    name: 'Positional Weights',
-                    text: 'Corners are extremely strong and never flip once taken; squares adjacent to empty corners (X-squares) are dangerous. The AI scores boards with a classic weight matrix that prizes corners and edges while punishing weak near-corner placements.',
-                },
-                alphabeta: {
-                    name: 'Alpha-Beta Minimax',
-                    text: 'Othello’s branching factor is larger than Tic-Tac-Toe, so the AI searches a few plies with alpha-beta pruning. Mobility (how many moves you leave yourself versus the opponent) is mixed into the heuristic so mid-game control matters, not only raw disc count.',
-                },
-            },
-        },
-    };
-
-    let currentGame = 'tictactoe';
-    let tttEngine;
-    let sessionData;
-    let tttGameOver = false;
-    let tttBusy = false;
-
-    const othello = new OthelloEngine();
-    let othelloBusy = false;
-
-    const algoList = document.getElementById('algo-list');
-    const explain = document.getElementById('explain');
-    const explainName = document.getElementById('explain-name');
-    const explainText = document.getElementById('explain-text');
-    const explainToggle = document.getElementById('explain-toggle');
-    const gameHint = document.getElementById('game-hint');
-    const gamesRail = document.getElementById('games-rail');
-    const algoRail = document.getElementById('algo-rail');
-
-    function wireCollapse(rail, button, collapsedGlyph, expandedGlyph) {
-        button.addEventListener('click', () => {
-            const collapsed = rail.classList.toggle('collapsed');
-            button.setAttribute('aria-expanded', String(!collapsed));
-            button.textContent = collapsed ? collapsedGlyph : expandedGlyph;
-            button.title = collapsed ? 'Expand' : 'Collapse';
-        });
-    }
-
-    wireCollapse(gamesRail, document.getElementById('games-toggle'), '›', '‹');
-    wireCollapse(algoRail, document.getElementById('algo-toggle'), '‹', '›');
-
-    explainToggle.addEventListener('click', () => {
-        const collapsed = explain.classList.toggle('collapsed');
-        explainToggle.setAttribute('aria-expanded', String(!collapsed));
-        explainToggle.textContent = collapsed ? '▴' : '▾';
-        explainToggle.title = collapsed ? 'Expand explanation' : 'Collapse explanation';
-    });
-
-    function resetExplain() {
-        explain.classList.add('empty');
-        explain.classList.remove('collapsed');
-        explainName.textContent = 'Select one →';
-        explainText.textContent = '';
-        explainToggle.textContent = '▾';
-        explainToggle.setAttribute('aria-expanded', 'true');
-    }
-
-    function renderAlgorithms(gameId) {
-        const algos = GAME_META[gameId].algorithms;
-        algoList.innerHTML = '';
-        Object.entries(algos).forEach(([id, algo]) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'nav-item';
-            btn.dataset.algo = id;
-            btn.textContent = algo.name;
-            btn.addEventListener('click', () => {
-                algoList.querySelectorAll('.nav-item').forEach((b) => b.classList.remove('active'));
-                btn.classList.add('active');
-                explainName.textContent = algo.name;
-                explainText.textContent = algo.text;
-                explain.classList.remove('empty', 'collapsed');
-                explainToggle.setAttribute('aria-expanded', 'true');
-                explainToggle.textContent = '▾';
-            });
-            algoList.appendChild(btn);
-        });
-        resetExplain();
-    }
-
-    function switchGame(gameId) {
-        if (!GAME_META[gameId] || gameId === currentGame) return;
-        currentGame = gameId;
-        document.querySelectorAll('[data-game]').forEach((b) => {
-            b.classList.toggle('active', b.dataset.game === gameId);
-        });
-        document.querySelectorAll('.play').forEach((p) => {
-            p.classList.toggle('active', p.dataset.panel === gameId);
-        });
-        gameHint.textContent = GAME_META[gameId].hint;
-        renderAlgorithms(gameId);
-
-        if (gameId === 'othello') startOthello();
-    }
-
-    document.querySelectorAll('[data-game]').forEach((btn) => {
-        btn.addEventListener('click', () => switchGame(btn.dataset.game));
-    });
-
-    /* ——— Tic-Tac-Toe ——— */
-    const tttCells = document.querySelectorAll('#ttt-board .cell');
-    const tttStatus = document.getElementById('ttt-status');
-
-    async function mintSession() {
-        const res = await fetch('/api/game/start', { method: 'POST' });
-        if (!res.ok) throw new Error('Failed to start session');
-        sessionData = await res.json();
-    }
-
-    function renderTtt() {
-        const pBits = tttEngine.get_player_bits();
-        const aBits = tttEngine.get_ai_bits();
-        tttCells.forEach((cell, i) => {
-            const bit = 1 << i;
-            cell.classList.remove('filled', 'x', 'o', 'locked');
-            if (pBits & bit) {
-                cell.textContent = 'X';
-                cell.classList.add('filled', 'x');
-            } else if (aBits & bit) {
-                cell.textContent = 'O';
-                cell.classList.add('filled', 'o');
-            } else {
-                cell.textContent = '';
-            }
-            if (tttGameOver) cell.classList.add('locked');
-        });
-    }
-
-    async function startTtt() {
-        tttBusy = true;
-        tttGameOver = false;
-        tttStatus.textContent = 'Starting session...';
-        tttEngine.reset();
-        renderTtt();
-        try {
-            await mintSession();
-            tttStatus.textContent = 'Game Ready — Make your move!';
-        } catch (err) {
-            tttStatus.textContent = 'Could not reach backend.';
-            console.error(err);
-        } finally {
-            tttBusy = false;
-        }
-    }
-
-    async function finishTtt(outcome) {
-        tttStatus.textContent = `Game Over: ${outcome}`;
-        try {
-            const res = await fetch('/api/game/finish', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...sessionData,
-                    result: outcome,
-                    move_sequence: tttEngine.get_move_sequence(),
-                }),
-            });
-            if (!res.ok) {
-                tttStatus.textContent = `Game Over: ${outcome} (verify failed)`;
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    tttCells.forEach((cell) => {
-        cell.addEventListener('click', async () => {
-            if (currentGame !== 'tictactoe' || tttBusy || tttGameOver) return;
-            const idx = parseInt(cell.dataset.idx, 10);
-            const resCode = tttEngine.play_turn(idx);
-            if (resCode === 255) return;
-            renderTtt();
-            if (resCode !== 0) {
-                tttGameOver = true;
-                renderTtt();
-                const outcome = resCode === 1 ? 'WIN' : (resCode === 2 ? 'LOSS' : 'DRAW');
-                tttBusy = true;
-                await finishTtt(outcome);
-                tttBusy = false;
-            }
-        });
-    });
-
-    document.getElementById('ttt-new').addEventListener('click', () => {
-        if (tttBusy) return;
-        startTtt();
-    });
-
-    /* ——— Othello ——— */
-    const othelloBoardEl = document.getElementById('othello-board');
-    const othelloStatus = document.getElementById('othello-status');
-    const scoreBlack = document.getElementById('score-black');
-    const scoreWhite = document.getElementById('score-white');
-
-    for (let i = 0; i < 64; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'o-cell';
-        cell.dataset.idx = String(i);
-        othelloBoardEl.appendChild(cell);
-    }
-    const oCells = othelloBoardEl.querySelectorAll('.o-cell');
-
-    function renderOthello() {
-        const legal = new Set(
-            othello.gameOver || othello.turn !== BLACK ? [] : othello.legalForCurrent()
-        );
-        const { black, white } = countPieces(othello.board);
-        scoreBlack.textContent = String(black);
-        scoreWhite.textContent = String(white);
-
-        oCells.forEach((cell, i) => {
-            cell.classList.toggle('legal', legal.has(i));
-            cell.innerHTML = '';
-            const v = othello.board[i];
-            if (v === BLACK || v === WHITE) {
-                const disc = document.createElement('div');
-                disc.className = `disc ${v === BLACK ? 'black' : 'white'}`;
-                cell.appendChild(disc);
-            }
-        });
-    }
-
-    function finishOthello() {
-        const outcome = outcomeForPlayer(othello.board);
-        const { black, white } = countPieces(othello.board);
-        const label = outcome === 'WIN' ? 'You win' : outcome === 'LOSS' ? 'White wins' : 'Draw';
-        othelloStatus.textContent = `Game Over: ${label} (${black}–${white})`;
-    }
-
-    async function runAiTurn() {
-        othelloBusy = true;
-        othelloStatus.textContent = 'White is thinking…';
-        await new Promise((r) => setTimeout(r, 180));
-        const status = othello.playAi();
-        renderOthello();
-        if (status === 'over') {
-            finishOthello();
-            othelloBusy = false;
-            return;
-        }
-        if (status === 'ai') {
-            await runAiTurn();
-            return;
-        }
-        if (status === 'pass') {
-            othelloStatus.textContent = 'White passed — your move';
-        } else {
-            othelloStatus.textContent = 'Your move (Black)';
-        }
-        othelloBusy = false;
-        renderOthello();
-    }
-
-    function startOthello() {
-        othello.reset();
-        othelloBusy = false;
-        othelloStatus.textContent = 'Your move (Black)';
-        renderOthello();
-    }
-
-    othelloBoardEl.addEventListener('click', async (ev) => {
-        if (currentGame !== 'othello' || othelloBusy || othello.gameOver) return;
-        const cell = ev.target.closest('.o-cell');
-        if (!cell) return;
-        const i = parseInt(cell.dataset.idx, 10);
-        const status = othello.playHuman(i);
-        if (status === 'invalid') return;
-        renderOthello();
-        if (status === 'over') {
-            finishOthello();
-            return;
-        }
-        if (status === 'pass') {
-            othelloStatus.textContent = 'No moves for White — your move again';
-            return;
-        }
-        if (status === 'ai') await runAiTurn();
-    });
-
-    document.getElementById('othello-new').addEventListener('click', () => {
-        if (othelloBusy) return;
-        startOthello();
-    });
-
-    renderAlgorithms('tictactoe');
-
-    async function setup() {
-        await init();
-        tttEngine = new TicTacToeEngine();
-        await startTtt();
-    }
-
-    setup().catch((err) => {
-        tttStatus.textContent = 'Failed to load Wasm engine.';
-        console.error('Wasm init failed:', err);
-    });
-</script>
+<script type="module" src="./app.js"></script>
 </body>
 </html>

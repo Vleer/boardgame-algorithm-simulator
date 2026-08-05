@@ -5,7 +5,9 @@ Interactive board games with visible algorithms — Rust WebAssembly for Tic-Tac
 ## Games
 
 - **Tic-Tac-Toe** — Wasm bitboard engine, unbeatable minimax, HMAC session + server replay verify
-- **Othello** — 8×8 Reversi with positional alpha-beta AI; algorithm explanations in the UI
+- **Othello** — 8×8 Reversi with positional alpha-beta AI
+- **Checkers** — American / English Draughts (8×8, step kings, forward-only men)
+- **International Draughts** — 10×10, flying kings, majority capture, end-of-turn promotion
 
 ## Run
 

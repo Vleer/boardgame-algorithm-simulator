@@ -25,7 +25,7 @@ WIN_PATTERNS = [
     0b001_010_100,
 ]
 
-app = FastAPI(title="Wasm Tic-Tac-Toe Backend")
+app = FastAPI(title="Boardgame Algorithm Simulator")
 
 
 class GameStartResponse(BaseModel):
@@ -40,6 +40,8 @@ class GameFinishPayload(BaseModel):
     signature: str
     move_sequence: str = Field(..., description='e.g. "04138"')
     result: str = Field(..., description='"WIN", "LOSS", or "DRAW"')
+    ai_policy: str = Field(default="strong", description="strong|random|semirandom")
+    human_first: bool = Field(default=True)
 
 
 def generate_signature(session_id: str, timestamp: int) -> str:
@@ -88,8 +90,54 @@ def find_best_ai_move(player_bits: int, ai_bits: int) -> int:
     return best_move
 
 
+def verify_recorded_sequence(moves: str, claimed_result: str, human_first: bool) -> bool:
+    """Replay recorded plies without assuming perfect AI replies."""
+    if claimed_result not in {"WIN", "LOSS", "DRAW"}:
+        return False
+    if not moves or len(moves) > 9 or not moves.isdigit():
+        return False
+    if any(c < "0" or c > "8" for c in moves):
+        return False
+    if len(set(moves)) != len(moves):
+        return False
+
+    player_bits = 0
+    ai_bits = 0
+    result: str | None = None
+    played = 0
+
+    for n, ch in enumerate(moves):
+        cell = int(ch)
+        bit = 1 << cell
+        if (player_bits | ai_bits) & bit:
+            return False
+        human_turn = (n % 2 == 0) if human_first else (n % 2 == 1)
+        if human_turn:
+            player_bits |= bit
+            if is_win(player_bits):
+                result = "WIN"
+                played = n + 1
+                break
+        else:
+            ai_bits |= bit
+            if is_win(ai_bits):
+                result = "LOSS"
+                played = n + 1
+                break
+        if (player_bits | ai_bits) == 0b1_1111_1111:
+            result = "DRAW"
+            played = n + 1
+            break
+    else:
+        return False
+
+    if result is None or played != len(moves):
+        return False
+    return result == claimed_result
+
+
 def verify_move_sequence(moves: str, claimed_result: str) -> bool:
-    """Replay the match with the same minimax AI used in Wasm."""
+    """Replay with perfect minimax AI (human first)."""
     if claimed_result not in {"WIN", "LOSS", "DRAW"}:
         return False
     if not moves or len(moves) > 9 or not moves.isdigit():
@@ -105,7 +153,6 @@ def verify_move_sequence(moves: str, claimed_result: str) -> bool:
     i = 0
 
     while i < len(moves):
-        # Player move
         cell = int(moves[i])
         bit = 1 << cell
         if (player_bits | ai_bits) & bit:
@@ -120,7 +167,6 @@ def verify_move_sequence(moves: str, claimed_result: str) -> bool:
             result = "DRAW"
             break
 
-        # Expected AI reply must match next digit (if present)
         expected_ai = find_best_ai_move(player_bits, ai_bits)
         if i >= len(moves):
             return False
@@ -165,7 +211,15 @@ def finish_game(payload: GameFinishPayload):
     if time.time() - payload.timestamp > 600:
         raise HTTPException(status_code=400, detail="Session expired")
 
-    if not verify_move_sequence(payload.move_sequence, payload.result):
+    strict = payload.ai_policy == "strong" and payload.human_first
+    ok = (
+        verify_move_sequence(payload.move_sequence, payload.result)
+        if strict
+        else verify_recorded_sequence(
+            payload.move_sequence, payload.result, payload.human_first
+        )
+    )
+    if not ok:
         raise HTTPException(status_code=422, detail="Manipulated match data")
 
     return {"status": "SUCCESS", "message": "Match verified and recorded"}
@@ -176,7 +230,6 @@ def health():
     return {"status": "ok"}
 
 
-# Static frontend + Wasm pkg (paths set at container build time)
 STATIC_ROOT = os.environ.get("STATIC_ROOT", "/app/static")
 
 
@@ -188,11 +241,13 @@ def index():
     return FileResponse(index_path)
 
 
-@app.get("/othello.js")
-def othello_js():
-    path = os.path.join(STATIC_ROOT, "othello.js")
+@app.get("/{name}.js")
+def serve_js_module(name: str):
+    if "/" in name or "\\" in name or name.startswith("."):
+        raise HTTPException(status_code=404, detail="Not found")
+    path = os.path.join(STATIC_ROOT, f"{name}.js")
     if not os.path.isfile(path):
-        raise HTTPException(status_code=404, detail="Othello module not found")
+        raise HTTPException(status_code=404, detail="Module not found")
     return FileResponse(path, media_type="text/javascript")
 
 

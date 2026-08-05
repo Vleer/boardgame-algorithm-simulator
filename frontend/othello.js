@@ -1,8 +1,10 @@
 /** Othello / Reversi engine with shallow minimax AI. */
 
+import { mctsChoose } from "./ai-policy.js";
+
 export const EMPTY = 0;
-export const BLACK = 1; // human
-export const WHITE = 2; // AI
+export const BLACK = 1; // human default
+export const WHITE = 2; // AI default
 
 const DIRS = [
   [-1, -1], [-1, 0], [-1, 1],
@@ -167,54 +169,129 @@ export function bestAiMove(board, color = WHITE, depth = 3) {
   return move;
 }
 
-export function outcomeForPlayer(board) {
+export function scoreOthelloMove(board, color, cell) {
+  const next = applyMove(board, cell, color);
+  if (!next) return -Infinity;
+  // 1-ply positional + disc delta
+  let score = 0;
+  for (let i = 0; i < 64; i++) {
+    if (next[i] === color) score += WEIGHTS[i];
+    else if (next[i] === opponent(color)) score -= WEIGHTS[i];
+  }
+  score += 2 * (legalMoves(next, color).length - legalMoves(next, opponent(color)).length);
+  return score;
+}
+
+export function outcomeForColor(board, humanColor) {
   const { black, white } = countPieces(board);
-  if (black > white) return "WIN";
-  if (black < white) return "LOSS";
-  return "DRAW";
+  if (black === white) return "DRAW";
+  const humanWins =
+    (humanColor === BLACK && black > white) ||
+    (humanColor === WHITE && white > black);
+  return humanWins ? "WIN" : "LOSS";
+}
+
+export function outcomeForPlayer(board) {
+  return outcomeForColor(board, BLACK);
 }
 
 export class OthelloEngine {
   constructor() {
+    this.humanColor = BLACK;
     this.reset();
   }
 
-  reset() {
+  reset(humanColor = this.humanColor) {
+    this.humanColor = humanColor;
     this.board = createInitialBoard();
     this.turn = BLACK;
     this.gameOver = false;
+    this.lastMove = null;
+  }
+
+  get aiColor() {
+    return opponent(this.humanColor);
+  }
+
+  legalFor(color) {
+    return legalMoves(this.board, color);
   }
 
   legalForCurrent() {
     return legalMoves(this.board, this.turn);
   }
 
-  /** Player (black) places at cell. Returns status: continue|ai|pass|over|invalid */
   playHuman(cell) {
-    if (this.gameOver || this.turn !== BLACK) return "invalid";
-    const next = applyMove(this.board, cell, BLACK);
+    if (this.gameOver || this.turn !== this.humanColor) return "invalid";
+    const next = applyMove(this.board, cell, this.humanColor);
     if (!next) return "invalid";
     this.board = next;
-    this.turn = WHITE;
+    this.lastMove = cell;
+    this.turn = this.aiColor;
     return this._afterMove();
   }
 
-  playAi() {
-    if (this.gameOver || this.turn !== WHITE) return "invalid";
-    const moves = legalMoves(this.board, WHITE);
+  playAi(policy = "strong", depth = 3) {
+    if (this.gameOver || this.turn !== this.aiColor) return "invalid";
+    const color = this.aiColor;
+    const moves = legalMoves(this.board, color);
     if (!moves.length) {
-      this.turn = BLACK;
+      this.turn = this.humanColor;
       return this._afterMove();
     }
-    const move = bestAiMove(this.board, WHITE, 3);
-    this.board = applyMove(this.board, move, WHITE);
-    this.turn = BLACK;
+
+    const d = Math.max(1, depth | 0);
+    let move;
+    if (policy === "random") {
+      move = moves[(Math.random() * moves.length) | 0];
+    } else if (policy === "semirandom") {
+      const ranked = moves
+        .map((m) => ({ m, s: scoreOthelloMove(this.board, color, m) }))
+        .sort((a, b) => b.s - a.s);
+      const keep = Math.max(1, Math.ceil(ranked.length / 2));
+      move = ranked[(Math.random() * keep) | 0].m;
+    } else if (policy === "mcts") {
+      move = mctsChoose({
+        rootState: { board: this.board.slice(), turn: color },
+        legalMoves: (s) => legalMoves(s.board, s.turn),
+        apply: (s, cell) => {
+          const board = applyMove(s.board, cell, s.turn);
+          let turn = opponent(s.turn);
+          if (!legalMoves(board, turn).length) {
+            if (legalMoves(board, s.turn).length) turn = s.turn;
+          }
+          return { board, turn };
+        },
+        isTerminal: (s) =>
+          !legalMoves(s.board, s.turn).length &&
+          !legalMoves(s.board, opponent(s.turn)).length,
+        reward: (s, perspective) => {
+          const { black, white } = countPieces(s.board);
+          const mine = perspective === BLACK ? black : white;
+          const theirs = perspective === BLACK ? white : black;
+          if (mine > theirs) return 1;
+          if (mine < theirs) return 0;
+          return 0.5;
+        },
+        perspective: color,
+        iterations: 120 + d * 100,
+        maxPlayoutPly: 40 + d * 8,
+      });
+    } else {
+      move = bestAiMove(this.board, color, d);
+    }
+
+    this.board = applyMove(this.board, move, color);
+    this.lastMove = move;
+    this.turn = this.humanColor;
     return this._afterMove();
   }
 
   _afterMove() {
     const cur = legalMoves(this.board, this.turn);
-    if (cur.length) return this.turn === WHITE ? "ai" : "continue";
+    if (cur.length) {
+      return this.turn === this.aiColor ? "ai" : "continue";
+    }
 
     const other = opponent(this.turn);
     const alt = legalMoves(this.board, other);
@@ -223,6 +300,6 @@ export class OthelloEngine {
       return "over";
     }
     this.turn = other;
-    return this.turn === WHITE ? "ai" : "pass";
+    return this.turn === this.aiColor ? "ai" : "pass";
   }
 }
